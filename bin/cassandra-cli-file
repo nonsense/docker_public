@@ -1,0 +1,17 @@
+#!/bin/bash
+
+DIR="$( cd "$( dirname "$0" )" && pwd )"
+
+# cassandra  
+mkdir -p $DIR/../out/cassandra/data
+if [ ! -f "$1" ]; then
+	echo "file not found"
+	exit 1;
+fi
+
+cp "$1" $DIR/../out/cassandra/data/file.txt
+
+SCRIPT_HOME="$( cd "$( dirname "$0" )" && pwd )"
+cd $SCRIPT_HOME
+vagrant ssh -c "sudo /vagrant/bin/cassandra-cli-file-inner"
+cd -

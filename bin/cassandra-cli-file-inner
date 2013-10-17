@@ -1,0 +1,4 @@
+#!/bin/bash
+
+ip=$(ip addr show docker0 | grep -o 'inet [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+' | grep -o [0-9].*)
+docker run -i -t -v /vagrant/out/cassandra/data:/data server:4444/cassandra /opt/cassandra/bin/cassandra-cli -h $ip -f /data/file.txt

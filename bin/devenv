@@ -1,0 +1,38 @@
+#!/bin/bash
+
+set -e
+
+# vagrant up
+
+
+SCRIPT_HOME="$( cd "$( dirname "$0" )" && pwd )"
+
+cd $SCRIPT_HOME/..
+
+case "$1" in
+	ssh)
+		vagrant ssh
+		;;
+	up)
+		vagrant up
+		;;
+	update)
+		git pull
+		vagrant ssh -c "sudo /vagrant/bin/devenv-inner.sh update"
+		;;
+	*)
+		vagrant ssh -c "sudo /vagrant/bin/devenv-inner.sh $1"
+		;;
+esac
+
+cd - > /dev/null
+
+# echo "waiting for elasticsearch to start"
+# until curl http://localhost:9200 > /dev/null 2>&1; do
+# 	echo -n .
+# 	sleep 1
+# done
+
+# # todo: only do this if it hasn't been done
+# echo "bootstrap elasticsearch"
+# $RIQ/scripts/dev_elasticsearch_bootstrap.sh
