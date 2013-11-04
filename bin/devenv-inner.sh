@@ -7,22 +7,28 @@ APPS=${APPS:-/mnt/apps}
 killz(){
 	echo "Killing all docker containers:"
 	docker ps
-	docker ps | tail -n +2 |cut -d ' ' -f 1 | xargs docker kill
+	ids=`docker ps | tail -n +2 |cut -d ' ' -f 1`
+	echo $ids | xargs docker kill
+	echo $ids | xargs docker rm
 }
 
 stop(){
 	echo "Stopping all docker containers:"
 	docker ps
-	docker ps | tail -n +2 |cut -d ' ' -f 1 | xargs docker stop
+	ids=`docker ps | tail -n +2 |cut -d ' ' -f 1`
+	echo $ids | xargs docker stop
+	echo $ids | xargs docker rm
 }
 
 start(){
 	mkdir -p $APPS/zookeeper/data
 	mkdir -p $APPS/zookeeper/logs
+	sudo docker rm zookeeper > /dev/null 2>&1
 	ZOOKEEPER=$(docker run \
 		-d \
 		-p 2181:2181 \
 		-v $APPS/zookeeper/logs:/logs \
+		-name zookeeper \
 		server:4444/zookeeper)
 	echo "Started ZOOKEEPER in container $ZOOKEEPER"
 
@@ -66,7 +72,7 @@ start(){
 	MONGO=$(docker run \
 		-p 27017:27017 \
 		-p 28017:28017 \
-		-v $APPS/mongo/data:/data \
+		-v $APPS/mongo/data:/data/lucid_prod \
 		-v $APPS/mongo/logs:/logs \
 		-d \
 		server:4444/mongo)
@@ -74,22 +80,24 @@ start(){
 
 	mkdir -p $APPS/kafka/data
 	mkdir -p $APPS/kafka/logs
+	sudo docker rm kafka > /dev/null 2>&1
 	KAFKA=$(docker run \
 		-d \
 		-p 9092:9092 \
 		-v $APPS/kafka/data:/data \
 		-v $APPS/kafka/logs:/logs \
-		-e ZOOKEEPER_IP=192.168.1.1 \
+		-name kafka \
+		-link zookeeper:zookeeper \
 		server:4444/kafka)
 	echo "Started KAFKA in container $KAFKA"
 
+	SHIPYARD=$(docker run \
+		-p 8005:8000 \
+		-d \
+		ehazlett/shipyard)
+
 	sleep 1
 
-	echo "Wiring containers together..."
-	echo "ZOOKEEPER as 192.168.1.1"
-	$DIR/pipework br1 $ZOOKEEPER 192.168.1.1
-	echo "KAFKA as 192.168.1.2"
-	$DIR/pipework br1 $KAFKA 192.168.1.2
 }
 
 update(){
@@ -102,6 +110,7 @@ update(){
 	docker pull server:4444/elasticsearch
 	docker pull server:4444/mongo
 	docker pull server:4444/kafka
+	docker pull ehazlett/shipyard
 }
 
 case "$1" in
